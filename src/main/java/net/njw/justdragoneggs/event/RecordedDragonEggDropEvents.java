@@ -12,6 +12,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
 import net.njw.justdragoneggs.registry.ModContent;
@@ -45,6 +46,11 @@ public final class RecordedDragonEggDropEvents {
             iterator.remove();
             return;
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        PENDING.clear();
     }
 
     private record PendingDrop(ResourceKey<Level> dimension, BlockPos pos, long tick, DragonBattleRecord record) {}
