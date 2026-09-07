@@ -210,13 +210,13 @@ public final class DragonEggRecordScreen extends Screen {
                 if (id.equals(BuiltInRegistries.ITEM.getKey(Items.BOW))) return Component.translatable("damage_method.njw_just_dragon_eggs.bow_direct");
                 if (id.equals(BuiltInRegistries.ITEM.getKey(Items.CROSSBOW))) return Component.translatable("damage_method.njw_just_dragon_eggs.crossbow_direct");
                 if (id.equals(BuiltInRegistries.ITEM.getKey(Items.TRIDENT))) return Component.translatable("damage_method.njw_just_dragon_eggs.trident_direct");
-                return Component.translatable("damage_method.njw_just_dragon_eggs.direct_item", item);
+                return itemMethodName("damage_method.njw_just_dragon_eggs.direct_item", item);
             }
             if (entry.method() == DamageMethod.PROJECTILE) {
                 if (id.equals(BuiltInRegistries.ITEM.getKey(Items.BOW))) return Component.translatable("damage_method.njw_just_dragon_eggs.bow_shot");
                 if (id.equals(BuiltInRegistries.ITEM.getKey(Items.CROSSBOW))) return Component.translatable("damage_method.njw_just_dragon_eggs.crossbow_shot");
                 if (id.equals(BuiltInRegistries.ITEM.getKey(Items.TRIDENT))) return Component.translatable("damage_method.njw_just_dragon_eggs.trident_thrown");
-                return Component.translatable("damage_method.njw_just_dragon_eggs.projectile_item", item);
+                return itemMethodName("damage_method.njw_just_dragon_eggs.projectile_item", item);
             }
             return item;
         }
@@ -234,6 +234,23 @@ public final class DragonEggRecordScreen extends Screen {
             case ARROW -> Component.translatable("damage_method.njw_just_dragon_eggs.arrow");
             case TRIDENT -> Component.translatable("damage_method.njw_just_dragon_eggs.trident");
         };
+    }
+
+    private static Component itemMethodName(String baseKey, Component item) {
+        return Component.translatable(baseKey + "_" + koreanInstrumentalVariant(item.getString()), item);
+    }
+
+    private static String koreanInstrumentalVariant(String text) {
+        int offset = text.length();
+        while (offset > 0) {
+            int codePoint = text.codePointBefore(offset);
+            offset -= Character.charCount(codePoint);
+            if (Character.isWhitespace(codePoint)) continue;
+            if (codePoint < 0xAC00 || codePoint > 0xD7A3) return "fallback";
+            int jongseong = (codePoint - 0xAC00) % 28;
+            return jongseong == 0 || jongseong == 8 ? "ro" : "euro";
+        }
+        return "fallback";
     }
 
     private static Component otherMethodName(OtherDamageMethod method) {
