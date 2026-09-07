@@ -138,7 +138,7 @@ public final class DragonCombatEvents {
     public static void onAttackEntity(AttackEntityEvent event) {
         if (!(event.getTarget() instanceof EndCrystal crystal) || !(event.getEntity().level() instanceof ServerLevel level)) return;
         Player player = event.getEntity();
-        CRYSTAL_ATTACKERS.put(crystal.getUUID(), new RecentPlayerAction(player.getUUID(), player.getName().getString(), level.getGameTime()));
+        rememberCrystalAttacker(crystal, player, level);
     }
 
     @SubscribeEvent
@@ -146,7 +146,13 @@ public final class DragonCombatEvents {
         if (!(event.getRayTraceResult() instanceof EntityHitResult hit) || !(hit.getEntity() instanceof EndCrystal crystal)) return;
         Projectile projectile = event.getProjectile();
         if (!(projectile.level() instanceof ServerLevel level) || !(projectile.getOwner() instanceof Player player)) return;
-        CRYSTAL_ATTACKERS.put(crystal.getUUID(), new RecentPlayerAction(player.getUUID(), player.getName().getString(), level.getGameTime()));
+        rememberCrystalAttacker(crystal, player, level);
+    }
+
+    private static void rememberCrystalAttacker(EndCrystal crystal, Player player, ServerLevel level) {
+        long tick = level.getGameTime();
+        CRYSTAL_ATTACKERS.entrySet().removeIf(entry -> tick - entry.getValue().tick() > ACTION_TTL);
+        CRYSTAL_ATTACKERS.put(crystal.getUUID(), new RecentPlayerAction(player.getUUID(), player.getName().getString(), tick));
     }
 
     private static double actualHealthDamage(EnderDragon dragon) {
