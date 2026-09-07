@@ -6,6 +6,8 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -14,6 +16,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.njw.justdragoneggs.DragonEggColors;
 import net.njw.justdragoneggs.JustDragonEggs;
 import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
@@ -63,6 +66,17 @@ public final class DragonEggClientEvents {
         minecraft.setScreen(new DragonEggRecordScreen(record));
         event.setSwingHand(false);
         event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public static void onItemTooltip(ItemTooltipEvent event) {
+        ItemStack stack = event.getItemStack();
+        if (!stack.is(ModContent.RECORDED_DRAGON_EGG_ITEM.get())) return;
+        DragonBattleRecord record = stack.get(ModContent.BATTLE_RECORD.get());
+        if (record == null) return;
+        Component killer = record.killerName().<Component>map(Component::literal).orElseGet(() -> Component.translatable("screen.njw_just_dragon_eggs.unknown"));
+        MutableComponent line = Component.literal("#" + record.dragonNumber()).withColor(DragonEggColors.dragonNumberColor(record.dragonNumber())).append(Component.literal(" ")).append(killer.copy().withColor(DragonEggColors.WHITE));
+        event.getToolTip().add(Math.min(1, event.getToolTip().size()), line);
     }
 
     private static BlockPos targetedRecordedDragonEgg(Minecraft minecraft) {
