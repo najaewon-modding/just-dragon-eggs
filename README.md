@@ -1,33 +1,61 @@
 # Just Dragon Eggs
 
-**Just Dragon Eggs** is a simple Minecraft mod that turns every Ender Dragon egg into a unique trophy containing the battle record.
+**Just Dragon Eggs** is a lightweight NeoForge mod that turns every Ender Dragon egg into a unique trophy containing the battle record.
 
-## 주요 기능
+## Compatibility
 
-### 드래곤 알 지급
+- Minecraft: `26.1.2`
+- NeoForge: `26.1.2.97` or newer for Minecraft 26.1.2
+- Mod version: `1.0.0-mc26.1.2`
 
-엔더 드래곤을 처치할 때마다 새로운 드래곤 알이 지급됩니다.
+For multiplayer, install the mod on both the server and connecting clients.
 
-각 드래곤 알은 해당 엔더 드래곤의 처치 기록을 개별적으로 저장합니다.
+## Features
 
-### 드래곤 알 정보
+### A recorded egg for every Ender Dragon
 
-드래곤 알에 마우스를 올리면 다음 정보를 확인할 수 있습니다.
+Every Ender Dragon kill produces a recorded Dragon Egg. The first vanilla Dragon Egg is replaced with the recorded version, and later kills create additional recorded eggs.
 
-- 몇 번째로 처치한 엔더 드래곤인지
-- 마지막 공격으로 엔더 드래곤을 처치한 플레이어
+Each egg stores the record of its own battle, and the record is preserved when the egg becomes an item and is placed again.
 
-### 전투 기록
+### Egg information
 
-드래곤 알을 우클릭하면 해당 엔더 드래곤의 전투 기록을 확인할 수 있는 전용 UI가 열립니다.
+When a recorded egg is an item, its tooltip shows the Dragon number and killer, for example:
 
-전투 기록에서는 다음 정보를 확인할 수 있습니다.
+```text
+#1 PlayerName
+```
 
-- 전투에 참여한 플레이어
-- 각 플레이어가 엔더 드래곤에게 입힌 피해량
-- 엔더 드래곤에게 피해를 입힌 플레이어 목록
-- 마지막 공격을 가한 플레이어
+When aiming at a placed recorded egg, the Dragon number and killer are displayed above the egg.
+
+### Vanilla-style interaction
+
+- Left click: teleport the Dragon Egg.
+- Right click: teleport the Dragon Egg.
+- Shift + right click: keep the egg in place and open its Battle Record screen.
+
+### Battle Record screen
+
+The Battle Record screen shows:
+
+- players ranked by damage dealt to the Ender Dragon;
+- each player's share of total battle damage;
+- unowned or unattributed damage as `Other`, outside the player ranking;
+- the player who dealt the final blow;
+- per-player damage breakdowns by weapon or damage method.
+
+Click a player name, or `Other`, to open the detailed damage breakdown.
+
+## Damage attribution
+
+The mod records the Ender Dragon's actual health loss after Minecraft has applied damage handling. Player attribution is intentionally conservative: damage is assigned to a player only when Minecraft provides a reliable causal connection. Damage that cannot be attributed reliably is recorded as `Other` instead of being guessed from proximity or redstone activity.
+
+## Installation
+
+1. Install NeoForge for Minecraft 26.1.2.
+2. Put the Just Dragon Eggs JAR in the `mods` folder.
+3. Launch Minecraft with the matching NeoForge profile.
 
 ## License
 
-See the `LICENSE` file for details.
+Just Dragon Eggs is licensed under the [MIT License](LICENSE).
