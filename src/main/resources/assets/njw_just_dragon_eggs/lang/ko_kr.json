@@ -1,5 +1,5 @@
 {
-  "screen.njw_just_dragon_eggs.slain_by": "처치자: %s",
+  "screen.njw_just_dragon_eggs.slain_by": "%s에게 처치됨",
   "screen.njw_just_dragon_eggs.player": "플레이어",
   "screen.njw_just_dragon_eggs.damage": "피해량",
   "screen.njw_just_dragon_eggs.temporary_data": "임시 전투 데이터"
