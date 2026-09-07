@@ -1,17 +1,21 @@
 package net.njw.justdragoneggs.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
 
 @EventBusSubscriber(modid = JustDragonEggs.MODID, value = Dist.CLIENT)
@@ -19,16 +23,26 @@ public final class DragonEggClientEvents {
     private DragonEggClientEvents() {}
 
     @SubscribeEvent
-    public static void onRenderGui(RenderGuiEvent.Post event) {
+    public static void onSubmitCustomGeometry(SubmitCustomGeometryEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null || minecraft.screen != null) return;
         BlockPos pos = targetedDragonEgg(minecraft);
         if (pos == null) return;
-        GuiGraphicsExtractor graphics = event.getGuiGraphics();
-        int centerX = minecraft.getWindow().getGuiScaledWidth() / 2;
-        int centerY = minecraft.getWindow().getGuiScaledHeight() / 2;
-        graphics.centeredText(minecraft.font, Component.literal("# 1"), centerX, centerY - 42, DragonEggRecordScreen.COLOR_1);
-        graphics.centeredText(minecraft.font, Component.literal("JWN__"), centerX, centerY - 30, 0xFFFFFFFF);
+
+        PoseStack poseStack = event.getPoseStack();
+        SubmitNodeCollector collector = event.getSubmitNodeCollector();
+        CameraRenderState camera = event.getLevelRenderState().cameraRenderState;
+        double dx = pos.getX() + 0.5 - camera.pos.x;
+        double dy = pos.getY() + 0.5 - camera.pos.y;
+        double dz = pos.getZ() + 0.5 - camera.pos.z;
+        int light = LevelRenderer.getLightCoords(minecraft.level, pos.above());
+        double distanceToCameraSq = camera.pos.distanceToSqr(pos.getCenter());
+
+        poseStack.pushPose();
+        poseStack.translate(dx, dy, dz);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# 1").withColor(DragonEggRecordScreen.COLOR_1), false, light, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, Component.literal("JWN__").withColor(DragonEggRecordScreen.COLOR_4), false, light, distanceToCameraSq, camera);
+        poseStack.popPose();
     }
 
     @SubscribeEvent
