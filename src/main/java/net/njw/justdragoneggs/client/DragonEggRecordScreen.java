@@ -30,9 +30,9 @@ public final class DragonEggRecordScreen extends Screen {
     private static final int COLOR_DETAIL = 0xFFFFFFFF;
     private static final int VISIBLE_ROWS = 10;
     private static final int ROW_HEIGHT = 13;
-    private static final int TOP_THREE_SEPARATOR_HEIGHT = 10;
+    private static final int TOP_THREE_SEPARATOR_HEIGHT = 12;
     private static final int TOP_THREE_SEPARATOR_LEFT_INSET = 13;
-    private static final int TOP_THREE_SEPARATOR_COLOR = 0xA09F9F9F;
+    private static final int TOP_THREE_SEPARATOR_COLOR = 0x80FFFFFF;
     private static final int DETAIL_LIST_GAP = 3;
     private static long handCursor;
 
