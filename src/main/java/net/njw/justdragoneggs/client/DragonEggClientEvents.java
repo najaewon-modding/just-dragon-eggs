@@ -58,7 +58,8 @@ public final class DragonEggClientEvents {
         BlockPos pos = targetedRecordedDragonEgg(minecraft);
         if (pos == null || !(minecraft.level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg)) return;
         DragonBattleRecord record = egg.record();
-        minecraft.setScreen(record != null ? new DragonEggRecordScreen(record) : new DragonEggRecordScreen(DragonEggPreset.create()));
+        if (record == null) return;
+        minecraft.setScreen(new DragonEggRecordScreen(record));
         event.setSwingHand(false);
         event.setCanceled(true);
     }
