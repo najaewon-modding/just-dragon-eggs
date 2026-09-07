@@ -14,6 +14,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
+import net.njw.justdragoneggs.DragonEggColors;
 import net.njw.justdragoneggs.JustDragonEggs;
 import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
@@ -45,8 +46,8 @@ public final class DragonEggClientEvents {
 
         poseStack.pushPose();
         poseStack.translate(dx, dy, dz);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# " + record.dragonNumber()).withColor(DragonEggRecordScreen.dragonNumberColor(record.dragonNumber())), true, FULL_BRIGHT, distanceToCameraSq, camera);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, killer.copy().withColor(DragonEggRecordScreen.COLOR_4), true, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# " + record.dragonNumber()).withColor(DragonEggColors.dragonNumberColor(record.dragonNumber())), true, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, killer.copy().withColor(DragonEggColors.COLOR_4), true, FULL_BRIGHT, distanceToCameraSq, camera);
         poseStack.popPose();
     }
 
