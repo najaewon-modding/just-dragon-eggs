@@ -32,7 +32,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
 import net.njw.justdragoneggs.registry.ModContent;
-import org.jspecify.annotations.Nullable;
 
 public final class RecordedDragonEggBlock extends FallingBlock implements EntityBlock {
     public static final MapCodec<RecordedDragonEggBlock> CODEC = simpleCodec(RecordedDragonEggBlock::new);
@@ -59,11 +58,13 @@ public final class RecordedDragonEggBlock extends FallingBlock implements Entity
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        if (!player.isShiftKeyDown()) teleport(state, level, pos);
         return InteractionResult.SUCCESS;
     }
 
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+        if (!player.isShiftKeyDown()) teleport(state, level, pos);
         return InteractionResult.SUCCESS;
     }
 

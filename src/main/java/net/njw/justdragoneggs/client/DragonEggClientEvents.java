@@ -54,7 +54,7 @@ public final class DragonEggClientEvents {
     public static void onUseItem(InputEvent.InteractionKeyMappingTriggered event) {
         if (!event.isUseItem()) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.level == null || minecraft.screen != null) return;
+        if (minecraft.player == null || minecraft.level == null || minecraft.screen != null || !minecraft.player.isShiftKeyDown()) return;
         BlockPos pos = targetedRecordedDragonEgg(minecraft);
         if (pos == null || !(minecraft.level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg) || egg.record() == null) return;
         minecraft.setScreen(new DragonEggRecordScreen(egg.record()));
