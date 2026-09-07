@@ -30,7 +30,7 @@ public final class DragonEggRecordScreen extends Screen {
     private static final int COLOR_DETAIL = 0xFFFFFFFF;
     private static final int VISIBLE_ROWS = 10;
     private static final int ROW_HEIGHT = 13;
-    private static final int TOP_THREE_GAP = 4;
+    private static final int TOP_THREE_GAP = 6;
     private static long handCursor;
 
     private final DragonBattleRecord record;
@@ -89,12 +89,12 @@ public final class DragonEggRecordScreen extends Screen {
         int right = centerX + 100;
         int y = top + 42;
         graphics.text(this.font, backText(), left, y, COLOR_DETAIL);
-        graphics.centeredText(this.font, selected.title(), centerX, y, COLOR_4);
+        graphics.centeredText(this.font, selected.title(), centerX, y, COLOR_DETAIL);
         y += 18;
         graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.method"), left, y, COLOR_DETAIL);
         Component shareHeader = Component.translatable("screen.njw_just_dragon_eggs.share");
         graphics.text(this.font, shareHeader, right - this.font.width(shareHeader), y, COLOR_DETAIL);
-        y += 14;
+        y += 14 + TOP_THREE_GAP;
 
         int end = Math.min(selected.methods().size(), scrollOffset + VISIBLE_ROWS);
         for (int i = scrollOffset; i < end; i++) {
