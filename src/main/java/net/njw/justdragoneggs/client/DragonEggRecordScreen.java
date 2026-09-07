@@ -1,10 +1,10 @@
 package net.njw.justdragoneggs.client;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -18,8 +18,6 @@ import net.njw.justdragoneggs.dragon.DamageMethod;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
 import net.njw.justdragoneggs.dragon.OtherDamageMethod;
 import net.njw.justdragoneggs.dragon.PlayerDamageRecord;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.MemoryUtil;
 
 public final class DragonEggRecordScreen extends Screen {
     public static final int COLOR_1 = 0xFFFFC94A;
@@ -33,7 +31,6 @@ public final class DragonEggRecordScreen extends Screen {
     private static final int TOP_THREE_SEPARATOR_HEIGHT = 12;
     private static final int TOP_THREE_SEPARATOR_LEFT_INSET = 13;
     private static final int DETAIL_LIST_GAP = 3;
-    private static long handCursor;
 
     private final DragonBattleRecord record;
     private final List<BattleEntry> battleEntries;
@@ -57,7 +54,7 @@ public final class DragonEggRecordScreen extends Screen {
         graphics.centeredText(this.font, Component.translatable("screen.njw_just_dragon_eggs.slain_by", killer), centerX, top + 16, COLOR_DETAIL);
         if (selected == null) renderRanking(graphics, centerX, top);
         else renderDetails(graphics, centerX, top);
-        setHandCursor(isInteractive(mouseX, mouseY));
+        if (isInteractive(mouseX, mouseY)) graphics.requestCursor(CursorTypes.POINTING_HAND);
     }
 
     private void renderRanking(GuiGraphicsExtractor graphics, int centerX, int top) {
@@ -157,12 +154,6 @@ public final class DragonEggRecordScreen extends Screen {
         return true;
     }
 
-    @Override
-    public void removed() {
-        setHandCursor(false);
-        super.removed();
-    }
-
     private boolean isInteractive(double mouseX, double mouseY) {
         int centerX = this.width / 2;
         int top = top();
@@ -257,16 +248,6 @@ public final class DragonEggRecordScreen extends Screen {
 
     private static Component backText() {
         return Component.literal("< ").append(Component.translatable("screen.njw_just_dragon_eggs.back"));
-    }
-
-    private static void setHandCursor(boolean hand) {
-        long window = Minecraft.getInstance().getWindow().handle();
-        if (!hand) {
-            GLFW.glfwSetCursor(window, MemoryUtil.NULL);
-            return;
-        }
-        if (handCursor == MemoryUtil.NULL) handCursor = GLFW.glfwCreateStandardCursor(GLFW.GLFW_HAND_CURSOR);
-        GLFW.glfwSetCursor(window, handCursor);
     }
 
     private static String percent(double part, double total) {
