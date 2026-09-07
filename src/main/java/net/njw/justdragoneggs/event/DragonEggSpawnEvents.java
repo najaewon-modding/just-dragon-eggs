@@ -15,7 +15,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
+import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
+import net.njw.justdragoneggs.registry.ModContent;
 import net.njw.justdragoneggs.state.DragonWorldData;
 
 @EventBusSubscriber(modid = JustDragonEggs.MODID)
@@ -41,16 +43,22 @@ public final class DragonEggSpawnEvents {
         }
 
         boolean vanillaEggExpected = VANILLA_EGG_EXPECTED.remove(dragon.getUUID()) == Boolean.TRUE;
+        BlockPos top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(dragon.getFightOrigin()));
+        BlockPos eggPos = top;
         if (vanillaEggExpected) {
-            JustDragonEggs.LOGGER.info("Using vanilla dragon egg for battle #{}", record.dragonNumber());
-            return;
+            if (level.getBlockState(top.below()).is(Blocks.DRAGON_EGG)) eggPos = top.below();
+            else if (level.getBlockState(top).is(Blocks.DRAGON_EGG)) eggPos = top;
         }
 
-        BlockPos eggPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(dragon.getFightOrigin()));
-        if (level.setBlockAndUpdate(eggPos, Blocks.DRAGON_EGG.defaultBlockState())) {
-            JustDragonEggs.LOGGER.info("Spawned dragon egg for battle #{} at {}", record.dragonNumber(), eggPos);
+        if (!level.setBlockAndUpdate(eggPos, ModContent.RECORDED_DRAGON_EGG.get().defaultBlockState())) {
+            JustDragonEggs.LOGGER.warn("Failed to create recorded dragon egg for battle #{} at {}", record.dragonNumber(), eggPos);
+            return;
+        }
+        if (level.getBlockEntity(eggPos) instanceof RecordedDragonEggBlockEntity egg) {
+            egg.setRecord(record);
+            JustDragonEggs.LOGGER.info("Created recorded dragon egg for battle #{} at {}", record.dragonNumber(), eggPos);
         } else {
-            JustDragonEggs.LOGGER.warn("Failed to spawn dragon egg for battle #{} at {}", record.dragonNumber(), eggPos);
+            JustDragonEggs.LOGGER.warn("Recorded dragon egg for battle #{} has no block entity at {}", record.dragonNumber(), eggPos);
         }
     }
 }

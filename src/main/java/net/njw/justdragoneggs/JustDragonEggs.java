@@ -7,6 +7,7 @@ import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.ModContainer;
+import net.njw.justdragoneggs.registry.ModContent;
 
 @Mod(JustDragonEggs.MODID)
 public class JustDragonEggs {
@@ -14,5 +15,6 @@ public class JustDragonEggs {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public JustDragonEggs(IEventBus modEventBus, ModContainer modContainer) {
+        ModContent.register(modEventBus);
     }
 }

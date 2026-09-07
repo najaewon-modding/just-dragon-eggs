@@ -6,7 +6,6 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -16,6 +15,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
+import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
+import net.njw.justdragoneggs.dragon.DragonBattleRecord;
+import net.njw.justdragoneggs.registry.ModContent;
 
 @EventBusSubscriber(modid = JustDragonEggs.MODID, value = Dist.CLIENT)
 public final class DragonEggClientEvents {
@@ -27,8 +29,10 @@ public final class DragonEggClientEvents {
     public static void onSubmitCustomGeometry(SubmitCustomGeometryEvent event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null || minecraft.screen != null) return;
-        BlockPos pos = targetedDragonEgg(minecraft);
-        if (pos == null) return;
+        BlockPos pos = targetedRecordedDragonEgg(minecraft);
+        if (pos == null || !(minecraft.level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg)) return;
+        DragonBattleRecord record = egg.record();
+        if (record == null) return;
 
         PoseStack poseStack = event.getPoseStack();
         SubmitNodeCollector collector = event.getSubmitNodeCollector();
@@ -37,11 +41,12 @@ public final class DragonEggClientEvents {
         double dy = pos.getY() + 0.5 - camera.pos.y;
         double dz = pos.getZ() + 0.5 - camera.pos.z;
         double distanceToCameraSq = camera.pos.distanceToSqr(pos.getCenter());
+        Component killer = record.killerName().<Component>map(Component::literal).orElseGet(() -> Component.translatable("screen.njw_just_dragon_eggs.unknown"));
 
         poseStack.pushPose();
         poseStack.translate(dx, dy, dz);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# 1").withColor(DragonEggRecordScreen.COLOR_1), true, FULL_BRIGHT, distanceToCameraSq, camera);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, Component.literal("JWN__").withColor(DragonEggRecordScreen.COLOR_4), true, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# " + record.dragonNumber()).withColor(DragonEggRecordScreen.dragonNumberColor(record.dragonNumber())), true, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, killer.copy().withColor(DragonEggRecordScreen.COLOR_4), true, FULL_BRIGHT, distanceToCameraSq, camera);
         poseStack.popPose();
     }
 
@@ -50,16 +55,17 @@ public final class DragonEggClientEvents {
         if (!event.isUseItem()) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null || minecraft.screen != null) return;
-        if (targetedDragonEgg(minecraft) == null) return;
-        minecraft.setScreen(new DragonEggRecordScreen());
+        BlockPos pos = targetedRecordedDragonEgg(minecraft);
+        if (pos == null || !(minecraft.level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg) || egg.record() == null) return;
+        minecraft.setScreen(new DragonEggRecordScreen(egg.record()));
         event.setSwingHand(false);
         event.setCanceled(true);
     }
 
-    private static BlockPos targetedDragonEgg(Minecraft minecraft) {
+    private static BlockPos targetedRecordedDragonEgg(Minecraft minecraft) {
         HitResult hit = minecraft.hitResult;
         if (!(hit instanceof BlockHitResult blockHit) || hit.getType() != HitResult.Type.BLOCK) return null;
         BlockPos pos = blockHit.getBlockPos();
-        return minecraft.level.getBlockState(pos).is(Blocks.DRAGON_EGG) ? pos : null;
+        return minecraft.level.getBlockState(pos).is(ModContent.RECORDED_DRAGON_EGG.get()) ? pos : null;
     }
 }
