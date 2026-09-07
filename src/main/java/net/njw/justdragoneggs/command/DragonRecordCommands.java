@@ -32,7 +32,7 @@ public final class DragonRecordCommands {
         DragonWorldData data = DragonWorldData.get(source.getLevel());
         List<DragonBattleRecord> records = data.records().stream().sorted(Comparator.comparingInt(DragonBattleRecord::dragonNumber)).toList();
         send(source, "Just Dragon Eggs: " + records.size() + " saved battle(s), kill count=" + data.killCount());
-        for (DragonBattleRecord record : records) send(source, String.format(Locale.ROOT, "#%d killer=%s damage=%.2f healing=%.2f", record.dragonNumber(), record.killerName().orElse("unknown"), record.totalDamage(), record.totalHealing()));
+        for (DragonBattleRecord record : records) send(source, String.format(Locale.ROOT, "#%d killer=%s damage=%.2f healing=%.2f balance=%.2f", record.dragonNumber(), record.killerName().orElse("unknown"), record.totalDamage(), record.totalHealing(), record.healthBalance()));
         return records.size();
     }
 
@@ -57,13 +57,14 @@ public final class DragonRecordCommands {
         send(source, "=== Ender Dragon #" + record.dragonNumber() + " ===");
         send(source, "Killer: " + record.killerName().orElse("unknown") + " | UUID: " + record.dragonUuid());
         send(source, String.format(Locale.ROOT, "Total damage: %.2f | player: %.2f | other: %.2f | healing: %.2f", totalDamage, record.totalPlayerDamage(), record.totalOtherDamage(), record.totalHealing()));
+        send(source, String.format(Locale.ROOT, "Health balance: %.2f + %.2f - %.2f = %.2f", record.maxHealth(), record.totalHealing(), totalDamage, record.healthBalance()));
 
         int rank = 1;
         for (PlayerDamageRecord player : record.playerDamage()) {
             double playerTotal = player.totalDamage();
             send(source, String.format(Locale.ROOT, "%d. %s: %.2f (%.2f%% of battle damage)", rank++, player.playerName(), playerTotal, percent(playerTotal, totalDamage)));
             for (PlayerDamageRecord.Entry entry : player.damageByMethod()) {
-                send(source, String.format(Locale.ROOT, "   - %s: %.2f (%.2f%% of player damage)", entry.method().getSerializedName(), entry.damage(), percent(entry.damage(), playerTotal)));
+                send(source, String.format(Locale.ROOT, "   - %s: %.2f (%.2f%% of player damage)", entry.debugName(), entry.damage(), percent(entry.damage(), playerTotal)));
             }
         }
 

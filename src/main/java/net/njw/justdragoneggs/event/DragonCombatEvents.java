@@ -7,9 +7,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
@@ -20,13 +23,16 @@ import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
-import net.minecraft.world.entity.projectile.arrow.ThrownTrident;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RespawnAnchorBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
@@ -45,11 +51,12 @@ import net.njw.justdragoneggs.state.DragonWorldData;
 @EventBusSubscriber(modid = JustDragonEggs.MODID)
 public final class DragonCombatEvents {
     private static final Map<UUID, DragonCombatTracker> ACTIVE = new HashMap<>();
+    private static final Map<UUID, PendingDeath> PENDING_DEATHS = new HashMap<>();
     private static final Map<UUID, RecentPlayerAction> CRYSTAL_ATTACKERS = new HashMap<>();
     private static final Map<UUID, Float> HEALTH_BEFORE_TICK = new HashMap<>();
     private static final Deque<ExplosionTrigger> BAD_RESPAWN_TRIGGERS = new ArrayDeque<>();
     private static final long ACTION_TTL = 2;
-    private static final double BAD_RESPAWN_MAX_DISTANCE_SQR = 64.0;
+    private static final double BAD_RESPAWN_SOURCE_DISTANCE_SQR = 0.01;
 
     private DragonCombatEvents() {}
 
@@ -57,11 +64,14 @@ public final class DragonCombatEvents {
     public static void onDragonDamage(LivingDamageEvent.Post event) {
         if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel level)) return;
         double damage = event.getHealthDamage();
-        if (damage <= 0) return;
         DragonCombatTracker tracker = ACTIVE.computeIfAbsent(dragon.getUUID(), DragonCombatTracker::new);
-        Attribution attribution = resolveAttribution(level, dragon, event.getSource());
-        if (attribution != null) tracker.addPlayerDamage(attribution.playerUuid(), attribution.playerName(), attribution.method(), damage);
-        else tracker.addOtherDamage(resolveOtherMethod(event.getSource()), damage);
+        if (damage > 0) {
+            Attribution attribution = resolveAttribution(level, event.getSource());
+            if (attribution != null) tracker.addPlayerDamage(attribution.playerUuid(), attribution.playerName(), attribution.method(), attribution.itemId(), damage);
+            else tracker.addOtherDamage(resolveOtherMethod(event.getSource()), damage);
+        }
+        PendingDeath pending = PENDING_DEATHS.remove(dragon.getUUID());
+        if (pending != null) finishBattle(level, dragon, tracker, pending);
     }
 
     @SubscribeEvent
@@ -82,28 +92,38 @@ public final class DragonCombatEvents {
     public static void onDragonDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel level)) return;
         HEALTH_BEFORE_TICK.remove(dragon.getUUID());
-        DragonCombatTracker tracker = ACTIVE.remove(dragon.getUUID());
-        if (tracker == null) tracker = new DragonCombatTracker(dragon.getUUID());
-
-        Attribution killerAttribution = resolveAttribution(level, dragon, event.getSource());
+        Attribution killerAttribution = resolveAttribution(level, event.getSource());
         Optional<UUID> killerUuid = killerAttribution == null ? Optional.empty() : Optional.of(killerAttribution.playerUuid());
         Optional<String> killerName = killerAttribution == null ? Optional.empty() : Optional.of(killerAttribution.playerName());
-
-        DragonWorldData data = DragonWorldData.get(level);
-        int dragonNumber = data.nextDragonNumber();
-        DragonBattleRecord record = tracker.finish(dragonNumber, killerUuid, killerName, System.currentTimeMillis());
-        data.addRecord(record);
-        JustDragonEggs.LOGGER.info("Saved Ender Dragon battle #{}: killer={}, playerDamage={}, otherDamage={}, healing={}", dragonNumber, killerName.orElse("unknown"), record.totalPlayerDamage(), record.totalOtherDamage(), record.totalHealing());
+        PENDING_DEATHS.put(dragon.getUUID(), new PendingDeath(killerUuid, killerName, System.currentTimeMillis()));
     }
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        Block block = level.getBlockState(event.getPos()).getBlock();
-        DamageMethod method = block instanceof BedBlock ? DamageMethod.BED : block == Blocks.RESPAWN_ANCHOR ? DamageMethod.RESPAWN_ANCHOR : null;
-        if (method == null) return;
         Player player = event.getEntity();
-        rememberBadRespawnTrigger(new ExplosionTrigger(level.dimension(), event.getPos(), player.getUUID(), player.getName().getString(), method, level.getGameTime()));
+        BlockPos pos = event.getPos();
+        BlockState state = level.getBlockState(pos);
+        DamageMethod method;
+
+        if (state.getBlock() instanceof BedBlock) {
+            if (state.getValue(BedBlock.PART) != BedPart.HEAD) {
+                pos = pos.relative(state.getValue(BedBlock.FACING));
+                state = level.getBlockState(pos);
+                if (!(state.getBlock() instanceof BedBlock)) return;
+            }
+            if (!level.environmentAttributes().getValue(EnvironmentAttributes.BED_RULE, pos).explodes()) return;
+            method = DamageMethod.BED;
+        } else if (state.is(Blocks.RESPAWN_ANCHOR)) {
+            int charge = state.getValue(RespawnAnchorBlock.CHARGE);
+            if (charge == 0 || RespawnAnchorBlock.canSetSpawn(level, pos)) return;
+            if (charge < RespawnAnchorBlock.MAX_CHARGES && (player.getMainHandItem().is(Items.GLOWSTONE) || player.getOffhandItem().is(Items.GLOWSTONE))) return;
+            method = DamageMethod.RESPAWN_ANCHOR;
+        } else {
+            return;
+        }
+
+        rememberBadRespawnTrigger(new ExplosionTrigger(level.dimension(), pos, player.getUUID(), player.getName().getString(), method, level.getGameTime()));
     }
 
     @SubscribeEvent
@@ -121,11 +141,21 @@ public final class DragonCombatEvents {
         CRYSTAL_ATTACKERS.put(crystal.getUUID(), new RecentPlayerAction(player.getUUID(), player.getName().getString(), level.getGameTime()));
     }
 
-    private static Attribution resolveAttribution(ServerLevel level, EnderDragon dragon, DamageSource source) {
+    private static void finishBattle(ServerLevel level, EnderDragon dragon, DragonCombatTracker tracker, PendingDeath pending) {
+        ACTIVE.remove(dragon.getUUID());
+        HEALTH_BEFORE_TICK.remove(dragon.getUUID());
+        DragonWorldData data = DragonWorldData.get(level);
+        int dragonNumber = data.nextDragonNumber();
+        DragonBattleRecord record = tracker.finish(dragonNumber, pending.killerUuid(), pending.killerName(), pending.killedAt(), dragon.getMaxHealth());
+        data.addRecord(record);
+        JustDragonEggs.LOGGER.info("Saved Ender Dragon battle #{}: killer={}, playerDamage={}, otherDamage={}, healing={}, balance={}", dragonNumber, pending.killerName().orElse("unknown"), record.totalPlayerDamage(), record.totalOtherDamage(), record.totalHealing(), record.healthBalance());
+    }
+
+    private static Attribution resolveAttribution(ServerLevel level, DamageSource source) {
         long tick = level.getGameTime();
         if (source.is(DamageTypes.BAD_RESPAWN_POINT)) {
-            ExplosionTrigger trigger = findBadRespawnTrigger(level, dragon, tick);
-            if (trigger != null) return new Attribution(trigger.playerUuid(), trigger.playerName(), trigger.method());
+            ExplosionTrigger trigger = findBadRespawnTrigger(level, source, tick);
+            if (trigger != null) return new Attribution(trigger.playerUuid(), trigger.playerName(), trigger.method(), Optional.empty());
         }
 
         Entity direct = source.getDirectEntity();
@@ -134,7 +164,7 @@ public final class DragonCombatEvents {
         if (direct instanceof EndCrystal crystal) {
             CRYSTAL_ATTACKERS.entrySet().removeIf(entry -> tick - entry.getValue().tick() > ACTION_TTL);
             RecentPlayerAction action = CRYSTAL_ATTACKERS.get(crystal.getUUID());
-            if (action != null && tick - action.tick() >= 0 && tick - action.tick() <= ACTION_TTL) return new Attribution(action.playerUuid(), action.playerName(), DamageMethod.END_CRYSTAL);
+            if (action != null && tick - action.tick() >= 0 && tick - action.tick() <= ACTION_TTL) return new Attribution(action.playerUuid(), action.playerName(), DamageMethod.END_CRYSTAL, Optional.empty());
             return null;
         }
 
@@ -146,14 +176,14 @@ public final class DragonCombatEvents {
 
         if (source.is(DamageTypes.THORNS) && causing instanceof Player player) return attribution(player, DamageMethod.THORNS);
         if (direct instanceof FireworkRocketEntity && causing instanceof Player player) return attribution(player, DamageMethod.FIREWORK);
-        if (direct instanceof ThrownTrident && causing instanceof Player player) return attribution(player, DamageMethod.TRIDENT);
-        if (direct instanceof AbstractArrow && causing instanceof Player player) return attribution(player, DamageMethod.ARROW);
         if (direct instanceof Projectile projectile) {
-            Entity owner = projectile.getOwner();
-            if (owner instanceof Player player) return attribution(player, DamageMethod.PROJECTILE);
-            if (causing instanceof Player player) return attribution(player, DamageMethod.PROJECTILE);
+            if (projectile.getOwner() instanceof Player player) return attribution(player, DamageMethod.PROJECTILE, weaponItemId(source));
+            if (causing instanceof Player player) return attribution(player, DamageMethod.PROJECTILE, weaponItemId(source));
         }
-        if (causing instanceof Player player) return attribution(player, direct == player ? DamageMethod.MELEE : DamageMethod.OTHER_PLAYER);
+        if (causing instanceof Player player) {
+            if (direct == player && source.is(DamageTypeTags.IS_PLAYER_ATTACK)) return attribution(player, DamageMethod.DIRECT, weaponItemId(source));
+            return attribution(player, DamageMethod.OTHER_PLAYER);
+        }
         return null;
     }
 
@@ -169,8 +199,18 @@ public final class DragonCombatEvents {
         return OtherDamageMethod.UNKNOWN;
     }
 
+    private static Optional<Identifier> weaponItemId(DamageSource source) {
+        ItemStack item = source.getWeaponItem();
+        if (item == null || item.isEmpty()) return Optional.empty();
+        return Optional.of(BuiltInRegistries.ITEM.getKey(item.getItem()));
+    }
+
     private static Attribution attribution(Player player, DamageMethod method) {
-        return new Attribution(player.getUUID(), player.getName().getString(), method);
+        return attribution(player, method, Optional.empty());
+    }
+
+    private static Attribution attribution(Player player, DamageMethod method, Optional<Identifier> itemId) {
+        return new Attribution(player.getUUID(), player.getName().getString(), method, itemId);
     }
 
     private static void rememberBadRespawnTrigger(ExplosionTrigger trigger) {
@@ -179,23 +219,23 @@ public final class DragonCombatEvents {
         while (BAD_RESPAWN_TRIGGERS.size() > 32) BAD_RESPAWN_TRIGGERS.removeFirst();
     }
 
-    private static ExplosionTrigger findBadRespawnTrigger(ServerLevel level, EnderDragon dragon, long tick) {
+    private static ExplosionTrigger findBadRespawnTrigger(ServerLevel level, DamageSource source, long tick) {
         BAD_RESPAWN_TRIGGERS.removeIf(trigger -> tick - trigger.tick() > ACTION_TTL);
-        ExplosionTrigger best = null;
-        double bestDistance = Double.MAX_VALUE;
+        Vec3 sourcePos = source.getSourcePosition();
+        if (sourcePos == null) return null;
+        ExplosionTrigger match = null;
         for (ExplosionTrigger trigger : BAD_RESPAWN_TRIGGERS) {
             long age = tick - trigger.tick();
             if (age < 0 || age > ACTION_TTL || !trigger.dimension().equals(level.dimension())) continue;
-            double distance = trigger.pos().getCenter().distanceToSqr(dragon.position());
-            if (distance <= BAD_RESPAWN_MAX_DISTANCE_SQR && distance < bestDistance) {
-                best = trigger;
-                bestDistance = distance;
-            }
+            if (trigger.pos().getCenter().distanceToSqr(sourcePos) > BAD_RESPAWN_SOURCE_DISTANCE_SQR) continue;
+            if (match != null && (!match.playerUuid().equals(trigger.playerUuid()) || match.method() != trigger.method())) return null;
+            match = trigger;
         }
-        return best;
+        return match;
     }
 
-    private record Attribution(UUID playerUuid, String playerName, DamageMethod method) {}
+    private record Attribution(UUID playerUuid, String playerName, DamageMethod method, Optional<Identifier> itemId) {}
+    private record PendingDeath(Optional<UUID> killerUuid, Optional<String> killerName, long killedAt) {}
     private record RecentPlayerAction(UUID playerUuid, String playerName, long tick) {}
     private record ExplosionTrigger(ResourceKey<Level> dimension, BlockPos pos, UUID playerUuid, String playerName, DamageMethod method, long tick) {}
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import net.minecraft.resources.Identifier;
 
 public final class DragonCombatTracker {
     private final UUID dragonUuid;
@@ -19,9 +20,9 @@ public final class DragonCombatTracker {
         this.dragonUuid = dragonUuid;
     }
 
-    public void addPlayerDamage(UUID playerUuid, String playerName, DamageMethod method, double damage) {
+    public void addPlayerDamage(UUID playerUuid, String playerName, DamageMethod method, Optional<Identifier> itemId, double damage) {
         if (damage <= 0) return;
-        playerDamage.computeIfAbsent(playerUuid, uuid -> new MutablePlayerDamage(playerName)).damage.merge(method, damage, Double::sum);
+        playerDamage.computeIfAbsent(playerUuid, uuid -> new MutablePlayerDamage(playerName)).damage.merge(new DamageKey(method, itemId), damage, Double::sum);
     }
 
     public void addOtherDamage(OtherDamageMethod method, double damage) {
@@ -33,13 +34,13 @@ public final class DragonCombatTracker {
         if (amount > 0) totalHealing += amount;
     }
 
-    public DragonBattleRecord finish(int dragonNumber, Optional<UUID> killerUuid, Optional<String> killerName, long killedAt) {
+    public DragonBattleRecord finish(int dragonNumber, Optional<UUID> killerUuid, Optional<String> killerName, long killedAt, double maxHealth) {
         List<PlayerDamageRecord> players = new ArrayList<>();
         for (var player : playerDamage.entrySet()) {
             List<PlayerDamageRecord.Entry> entries = player.getValue().damage.entrySet().stream()
                     .filter(entry -> entry.getValue() > 0)
-                    .sorted(Map.Entry.comparingByKey())
-                    .map(entry -> new PlayerDamageRecord.Entry(entry.getKey(), entry.getValue()))
+                    .sorted(Comparator.comparing((Map.Entry<DamageKey, Double> entry) -> entry.getKey().method().getSerializedName()).thenComparing(entry -> entry.getKey().itemId().map(Identifier::toString).orElse("")))
+                    .map(entry -> new PlayerDamageRecord.Entry(entry.getKey().method(), entry.getKey().itemId(), entry.getValue()))
                     .toList();
             players.add(new PlayerDamageRecord(player.getKey(), player.getValue().name, entries));
         }
@@ -49,12 +50,14 @@ public final class DragonCombatTracker {
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> new DragonBattleRecord.OtherEntry(entry.getKey(), entry.getValue()))
                 .toList();
-        return new DragonBattleRecord(dragonNumber, dragonUuid, killerUuid, killerName, killedAt, List.copyOf(players), List.copyOf(others), totalHealing);
+        return new DragonBattleRecord(dragonNumber, dragonUuid, killerUuid, killerName, killedAt, List.copyOf(players), List.copyOf(others), totalHealing, maxHealth);
     }
+
+    private record DamageKey(DamageMethod method, Optional<Identifier> itemId) {}
 
     private static final class MutablePlayerDamage {
         private final String name;
-        private final EnumMap<DamageMethod, Double> damage = new EnumMap<>(DamageMethod.class);
+        private final Map<DamageKey, Double> damage = new HashMap<>();
 
         private MutablePlayerDamage(String name) {
             this.name = name;

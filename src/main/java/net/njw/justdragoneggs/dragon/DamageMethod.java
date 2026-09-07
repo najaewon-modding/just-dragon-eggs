@@ -4,17 +4,18 @@ import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
 
 public enum DamageMethod implements StringRepresentable {
-    MELEE("melee"),
-    ARROW("arrow"),
-    TRIDENT("trident"),
-    FIREWORK("firework"),
+    DIRECT("direct"),
     PROJECTILE("projectile"),
+    FIREWORK("firework"),
     BED("bed"),
     RESPAWN_ANCHOR("respawn_anchor"),
     END_CRYSTAL("end_crystal"),
     TNT("tnt"),
     THORNS("thorns"),
-    OTHER_PLAYER("other_player");
+    OTHER_PLAYER("other_player"),
+    MELEE("melee"),
+    ARROW("arrow"),
+    TRIDENT("trident");
 
     public static final Codec<DamageMethod> CODEC = StringRepresentable.fromEnum(DamageMethod::values);
     private final String name;
