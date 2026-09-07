@@ -14,18 +14,14 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.njw.justdragoneggs.DragonEggColors;
 import net.njw.justdragoneggs.dragon.DamageMethod;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
 import net.njw.justdragoneggs.dragon.OtherDamageMethod;
 import net.njw.justdragoneggs.dragon.PlayerDamageRecord;
 
 public final class DragonEggRecordScreen extends Screen {
-    public static final int COLOR_1 = 0xFFFFC94A;
-    public static final int COLOR_2 = 0xFFF2F5F8;
-    public static final int COLOR_3 = 0xFFD8894A;
-    public static final int COLOR_4 = 0xFFD0D0D0;
-    public static final int COLOR_5 = 0xFF9F9F9F;
-    private static final int COLOR_DETAIL = 0xFFFFFFFF;
+    private static final int COLOR_DETAIL = DragonEggColors.WHITE;
     private static final int VISIBLE_ROWS = 10;
     private static final int ROW_HEIGHT = 13;
     private static final int TOP_THREE_SEPARATOR_HEIGHT = 12;
@@ -34,6 +30,7 @@ public final class DragonEggRecordScreen extends Screen {
 
     private final DragonBattleRecord record;
     private final List<BattleEntry> battleEntries;
+    private final double totalDamage;
     private DetailSelection selected;
     private int scrollOffset;
 
@@ -41,6 +38,7 @@ public final class DragonEggRecordScreen extends Screen {
         super(Component.translatable("entity.minecraft.ender_dragon"));
         this.record = record;
         this.battleEntries = createBattleEntries(record);
+        this.totalDamage = record.totalDamage();
     }
 
     @Override
@@ -48,7 +46,7 @@ public final class DragonEggRecordScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         int centerX = this.width / 2;
         int top = top();
-        MutableComponent title = Component.literal("#" + record.dragonNumber() + " ").withColor(dragonNumberColor(record.dragonNumber())).append(Component.translatable("entity.minecraft.ender_dragon").withColor(COLOR_DETAIL));
+        MutableComponent title = Component.literal("#" + record.dragonNumber() + " ").withColor(DragonEggColors.dragonNumberColor(record.dragonNumber())).append(Component.translatable("entity.minecraft.ender_dragon").withColor(COLOR_DETAIL));
         graphics.centeredText(this.font, title, centerX, top, COLOR_DETAIL);
         Component killer = record.killerName().<Component>map(Component::literal).orElseGet(() -> Component.translatable("screen.njw_just_dragon_eggs.unknown"));
         graphics.centeredText(this.font, Component.translatable("screen.njw_just_dragon_eggs.slain_by", killer), centerX, top + 16, COLOR_DETAIL);
@@ -71,18 +69,18 @@ public final class DragonEggRecordScreen extends Screen {
         int end = Math.min(battleEntries.size(), scrollOffset + VISIBLE_ROWS);
         for (int i = scrollOffset; i < end; i++) {
             BattleEntry entry = battleEntries.get(i);
-            int color = entry.rank() > 0 ? rankingColor(entry.rank()) : COLOR_4;
+            int color = entry.rank() > 0 ? DragonEggColors.rankingColor(entry.rank()) : DragonEggColors.COLOR_4;
             boolean shadow = entry.rank() > 0 && entry.rank() <= 3;
             if (entry.rank() > 0) {
                 Component rankText = Component.literal(entry.rank() + ".");
                 graphics.text(this.font, rankText, rankRight - this.font.width(rankText), y, color, shadow);
             }
             graphics.text(this.font, entry.name(), nameLeft, y, color, shadow);
-            Component damageText = Component.literal(percent(entry.damage(), record.totalDamage()));
+            Component damageText = Component.literal(percent(entry.damage(), totalDamage));
             graphics.text(this.font, damageText, right - this.font.width(damageText), y, color, shadow);
             y += ROW_HEIGHT;
             if (hasTopThreeSeparatorAfter(i)) {
-                graphics.horizontalLine(left + TOP_THREE_SEPARATOR_LEFT_INSET, right, y + 3, COLOR_4);
+                graphics.horizontalLine(left + TOP_THREE_SEPARATOR_LEFT_INSET, right, y + 3, DragonEggColors.COLOR_4);
                 y += TOP_THREE_SEPARATOR_HEIGHT;
             }
         }
@@ -256,21 +254,6 @@ public final class DragonEggRecordScreen extends Screen {
 
     private int top() {
         return Math.max(28, this.height / 2 - 92);
-    }
-
-    public static int dragonNumberColor(int number) {
-        if (number == 1) return COLOR_1;
-        if (number == 2) return COLOR_2;
-        if (number == 3) return COLOR_3;
-        if (number <= 10) return COLOR_4;
-        return COLOR_5;
-    }
-
-    private static int rankingColor(int rank) {
-        if (rank == 1) return COLOR_1;
-        if (rank == 2) return COLOR_2;
-        if (rank == 3) return COLOR_3;
-        return COLOR_4;
     }
 
     private record BattleEntry(int rank, Component name, double damage, PlayerDamageRecord player) {}
