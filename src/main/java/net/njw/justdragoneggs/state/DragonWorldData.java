@@ -7,7 +7,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -50,19 +49,7 @@ public final class DragonWorldData extends SavedData {
         setDirty();
     }
 
-    public int killCount() {
-        return killCount;
-    }
-
     public List<DragonBattleRecord> records() {
         return new ArrayList<>(records.values());
-    }
-
-    public Optional<DragonBattleRecord> getRecord(int number) {
-        return Optional.ofNullable(records.get(number));
-    }
-
-    public Optional<DragonBattleRecord> latestRecord() {
-        return records.values().stream().max(Comparator.comparingInt(DragonBattleRecord::dragonNumber));
     }
 }
