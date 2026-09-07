@@ -53,6 +53,7 @@ public final class DragonCombatEvents {
     private static final Map<UUID, DragonCombatTracker> ACTIVE = new HashMap<>();
     private static final Map<UUID, PendingDeath> PENDING_DEATHS = new HashMap<>();
     private static final Map<UUID, RecentPlayerAction> CRYSTAL_ATTACKERS = new HashMap<>();
+    private static final Map<UUID, Deque<Float>> HEALTH_BEFORE_DAMAGE = new HashMap<>();
     private static final Map<UUID, Float> HEALTH_BEFORE_TICK = new HashMap<>();
     private static final Deque<ExplosionTrigger> BAD_RESPAWN_TRIGGERS = new ArrayDeque<>();
     private static final long ACTION_TTL = 2;
@@ -61,9 +62,15 @@ public final class DragonCombatEvents {
     private DragonCombatEvents() {}
 
     @SubscribeEvent
+    public static void onDragonDamagePre(LivingDamageEvent.Pre event) {
+        if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel)) return;
+        HEALTH_BEFORE_DAMAGE.computeIfAbsent(dragon.getUUID(), uuid -> new ArrayDeque<>()).push(dragon.getHealth());
+    }
+
+    @SubscribeEvent
     public static void onDragonDamage(LivingDamageEvent.Post event) {
         if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel level)) return;
-        double damage = event.getHealthDamage();
+        double damage = actualHealthDamage(dragon);
         DragonCombatTracker tracker = ACTIVE.computeIfAbsent(dragon.getUUID(), DragonCombatTracker::new);
         if (damage > 0) {
             Attribution attribution = resolveAttribution(level, event.getSource());
@@ -141,8 +148,21 @@ public final class DragonCombatEvents {
         CRYSTAL_ATTACKERS.put(crystal.getUUID(), new RecentPlayerAction(player.getUUID(), player.getName().getString(), level.getGameTime()));
     }
 
+    private static double actualHealthDamage(EnderDragon dragon) {
+        UUID dragonUuid = dragon.getUUID();
+        Deque<Float> snapshots = HEALTH_BEFORE_DAMAGE.get(dragonUuid);
+        if (snapshots == null || snapshots.isEmpty()) {
+            JustDragonEggs.LOGGER.warn("Missing pre-damage health snapshot for Ender Dragon {}", dragonUuid);
+            return 0.0;
+        }
+        float before = snapshots.pop();
+        if (snapshots.isEmpty()) HEALTH_BEFORE_DAMAGE.remove(dragonUuid);
+        return Math.max(0.0, before - dragon.getHealth());
+    }
+
     private static void finishBattle(ServerLevel level, EnderDragon dragon, DragonCombatTracker tracker, PendingDeath pending) {
         ACTIVE.remove(dragon.getUUID());
+        HEALTH_BEFORE_DAMAGE.remove(dragon.getUUID());
         HEALTH_BEFORE_TICK.remove(dragon.getUUID());
         DragonWorldData data = DragonWorldData.get(level);
         int dragonNumber = data.nextDragonNumber();
