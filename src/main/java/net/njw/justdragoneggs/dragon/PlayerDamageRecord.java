@@ -25,10 +25,5 @@ public record PlayerDamageRecord(UUID playerUuid, String playerName, List<Entry>
                 Identifier.CODEC.optionalFieldOf("item").forGetter(Entry::itemId),
                 Codec.DOUBLE.fieldOf("damage").forGetter(Entry::damage)
         ).apply(instance, Entry::new));
-
-        public String debugName() {
-            if (method == DamageMethod.DIRECT && itemId.isEmpty()) return "hand";
-            return itemId.map(id -> method.getSerializedName() + "[" + id + "]").orElse(method.getSerializedName());
-        }
     }
 }
