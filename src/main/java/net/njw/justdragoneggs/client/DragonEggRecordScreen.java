@@ -32,7 +32,6 @@ public final class DragonEggRecordScreen extends Screen {
     private static final int ROW_HEIGHT = 13;
     private static final int TOP_THREE_SEPARATOR_HEIGHT = 12;
     private static final int TOP_THREE_SEPARATOR_LEFT_INSET = 13;
-    private static final int TOP_THREE_SEPARATOR_COLOR = 0x80FFFFFF;
     private static final int DETAIL_LIST_GAP = 3;
     private static long handCursor;
 
@@ -86,7 +85,7 @@ public final class DragonEggRecordScreen extends Screen {
             graphics.text(this.font, damageText, right - this.font.width(damageText), y, color, shadow);
             y += ROW_HEIGHT;
             if (hasTopThreeSeparatorAfter(i)) {
-                graphics.horizontalLine(left + TOP_THREE_SEPARATOR_LEFT_INSET, right, y + 3, TOP_THREE_SEPARATOR_COLOR);
+                graphics.horizontalLine(left + TOP_THREE_SEPARATOR_LEFT_INSET, right, y + 3, COLOR_4);
                 y += TOP_THREE_SEPARATOR_HEIGHT;
             }
         }
