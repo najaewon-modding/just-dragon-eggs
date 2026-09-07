@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.head_commit.message == 'Release 1.0.0-mc26.1.2'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build release jar
+        run: ./gradlew build
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > /tmp/release-notes.md <<'EOF'
+          The first public release of **Just Dragon Eggs**.
+
+          Just Dragon Eggs turns every Ender Dragon egg into a unique trophy containing the battle record of the dragon that produced it.
+
+          ## Features
+
+          - Every Ender Dragon kill produces a recorded Dragon Egg.
+          - The first Dragon Egg replaces the vanilla egg, while later kills produce additional recorded eggs.
+          - Each egg permanently stores its battle record, even after being broken, becoming an item, falling onto blocks such as torches, being stored in an inventory, and being placed again.
+          - Looking at a placed recorded egg displays its Dragon number and the player who dealt the killing blow.
+          - Item tooltips display the Dragon number and killer.
+          - Hold **Shift and right-click** a recorded egg to open its Battle Record.
+          - Normal left-click and right-click behavior preserves the vanilla Dragon Egg teleport mechanic.
+
+          ## Battle Record
+
+          The Battle Record includes:
+
+          - Player damage ranking
+          - Percentage of total battle damage
+          - Detailed damage methods for each player
+          - Unattributed damage listed separately as **Other**
+          - Support for direct attacks, projectiles, TNT, End Crystals, beds, respawn anchors, fireworks, Thorns, and other damage sources
+
+          Damage is recorded from the Dragon's actual health loss rather than raw incoming damage, preventing overkill damage from inflating the results.
+
+          Player attribution is intentionally conservative. Damage is only assigned to a player when Minecraft provides a sufficiently reliable causal link; otherwise, it is recorded as **Other**.
+
+          ## Localization
+
+          - English
+          - Korean
+
+          Korean item names automatically use the appropriate `로` / `으로` particle when possible, with a safe `(으)로` fallback for names that cannot be reliably analyzed.
+
+          ## Requirements
+
+          - Minecraft **26.1.2**
+          - NeoForge **26.1.2.97**
+          - Java **25**
+          - Install the mod on both the client and server when playing multiplayer.
+
+          ## License
+
+          Just Dragon Eggs is released under the **MIT License**.
+          EOF
+          gh release create v1.0.0-mc26.1.2 \
+            "build/libs/njw_just_dragon_eggs-1.0.0-mc26.1.2.jar" \
+            --target "$GITHUB_SHA" \
+            --title "Just Dragon Eggs 1.0.0-mc26.1.2" \
+            --notes-file /tmp/release-notes.md
