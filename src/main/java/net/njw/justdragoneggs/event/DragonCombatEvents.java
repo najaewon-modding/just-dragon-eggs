@@ -40,6 +40,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
 import net.njw.justdragoneggs.dragon.DamageMethod;
@@ -252,6 +253,16 @@ public final class DragonCombatEvents {
             match = trigger;
         }
         return match;
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        ACTIVE.clear();
+        PENDING_DEATHS.clear();
+        CRYSTAL_ATTACKERS.clear();
+        HEALTH_BEFORE_DAMAGE.clear();
+        HEALTH_BEFORE_TICK.clear();
+        BAD_RESPAWN_TRIGGERS.clear();
     }
 
     private record Attribution(UUID playerUuid, String playerName, DamageMethod method, Optional<Identifier> itemId) {}
