@@ -32,9 +32,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
 import net.njw.justdragoneggs.dragon.DamageMethod;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
@@ -46,6 +46,7 @@ import net.njw.justdragoneggs.state.DragonWorldData;
 public final class DragonCombatEvents {
     private static final Map<UUID, DragonCombatTracker> ACTIVE = new HashMap<>();
     private static final Map<UUID, RecentPlayerAction> CRYSTAL_ATTACKERS = new HashMap<>();
+    private static final Map<UUID, Float> HEALTH_BEFORE_TICK = new HashMap<>();
     private static final Deque<ExplosionTrigger> BAD_RESPAWN_TRIGGERS = new ArrayDeque<>();
     private static final long ACTION_TTL = 2;
     private static final double BAD_RESPAWN_MAX_DISTANCE_SQR = 64.0;
@@ -64,15 +65,23 @@ public final class DragonCombatEvents {
     }
 
     @SubscribeEvent
-    public static void onDragonHeal(LivingHealEvent event) {
+    public static void onDragonTickPre(EntityTickEvent.Pre event) {
+        if (event.getEntity() instanceof EnderDragon dragon && dragon.level() instanceof ServerLevel) HEALTH_BEFORE_TICK.put(dragon.getUUID(), dragon.getHealth());
+    }
+
+    @SubscribeEvent
+    public static void onDragonTickPost(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel)) return;
-        double actualHealing = Math.min(event.getAmount(), Math.max(0.0, dragon.getMaxHealth() - dragon.getHealth()));
-        if (actualHealing > 0) ACTIVE.computeIfAbsent(dragon.getUUID(), DragonCombatTracker::new).addHealing(actualHealing);
+        Float before = HEALTH_BEFORE_TICK.remove(dragon.getUUID());
+        if (before == null) return;
+        double healing = dragon.getHealth() - before;
+        if (healing > 0) ACTIVE.computeIfAbsent(dragon.getUUID(), DragonCombatTracker::new).addHealing(healing);
     }
 
     @SubscribeEvent
     public static void onDragonDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel level)) return;
+        HEALTH_BEFORE_TICK.remove(dragon.getUUID());
         DragonCombatTracker tracker = ACTIVE.remove(dragon.getUUID());
         if (tracker == null) tracker = new DragonCombatTracker(dragon.getUUID());
 
