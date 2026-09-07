@@ -64,9 +64,9 @@ public final class DragonEggRecordScreen extends Screen {
         int nameLeft = left + 32;
         int right = centerX + 100;
         int y = top + 42;
-        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.player"), nameLeft, y, COLOR_5);
+        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.player"), nameLeft, y, COLOR_DETAIL);
         Component damageHeader = Component.translatable("screen.njw_just_dragon_eggs.damage");
-        graphics.text(this.font, damageHeader, right - this.font.width(damageHeader), y, COLOR_5);
+        graphics.text(this.font, damageHeader, right - this.font.width(damageHeader), y, COLOR_DETAIL);
         y += 14;
 
         int end = Math.min(battleEntries.size(), scrollOffset + VISIBLE_ROWS);
@@ -88,12 +88,12 @@ public final class DragonEggRecordScreen extends Screen {
         int left = centerX - 100;
         int right = centerX + 100;
         int y = top + 42;
-        graphics.text(this.font, backText(), left, y, COLOR_5);
+        graphics.text(this.font, backText(), left, y, COLOR_DETAIL);
         graphics.centeredText(this.font, selected.title(), centerX, y, COLOR_4);
         y += 18;
-        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.method"), left, y, COLOR_5);
+        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.method"), left, y, COLOR_DETAIL);
         Component shareHeader = Component.translatable("screen.njw_just_dragon_eggs.share");
-        graphics.text(this.font, shareHeader, right - this.font.width(shareHeader), y, COLOR_5);
+        graphics.text(this.font, shareHeader, right - this.font.width(shareHeader), y, COLOR_DETAIL);
         y += 14;
 
         int end = Math.min(selected.methods().size(), scrollOffset + VISIBLE_ROWS);
