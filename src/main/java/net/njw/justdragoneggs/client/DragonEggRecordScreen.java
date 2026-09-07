@@ -11,7 +11,7 @@ import net.minecraft.network.chat.MutableComponent;
 
 public final class DragonEggRecordScreen extends Screen {
     public static final int COLOR_1 = 0xFFFFC94A;
-    public static final int COLOR_2 = 0xFFD9E0E8;
+    public static final int COLOR_2 = 0xFFF2F5F8;
     public static final int COLOR_3 = 0xFFD8894A;
     public static final int COLOR_4 = 0xFFD0D0D0;
     public static final int COLOR_5 = 0xFFBCBCBC;
