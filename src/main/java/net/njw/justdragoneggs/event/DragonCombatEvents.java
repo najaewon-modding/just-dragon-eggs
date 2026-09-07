@@ -86,18 +86,8 @@ public final class DragonCombatEvents {
         if (tracker == null) tracker = new DragonCombatTracker(dragon.getUUID());
 
         Attribution killerAttribution = resolveAttribution(level, dragon, event.getSource());
-        Optional<UUID> killerUuid = Optional.empty();
-        Optional<String> killerName = Optional.empty();
-        if (killerAttribution != null) {
-            killerUuid = Optional.of(killerAttribution.playerUuid());
-            killerName = Optional.of(killerAttribution.playerName());
-        } else {
-            LivingEntity killCredit = dragon.getKillCredit();
-            if (killCredit instanceof Player player) {
-                killerUuid = Optional.of(player.getUUID());
-                killerName = Optional.of(player.getName().getString());
-            }
-        }
+        Optional<UUID> killerUuid = killerAttribution == null ? Optional.empty() : Optional.of(killerAttribution.playerUuid());
+        Optional<String> killerName = killerAttribution == null ? Optional.empty() : Optional.of(killerAttribution.playerName());
 
         DragonWorldData data = DragonWorldData.get(level);
         int dragonNumber = data.nextDragonNumber();
@@ -142,9 +132,9 @@ public final class DragonCombatEvents {
         Entity causing = source.getEntity();
 
         if (direct instanceof EndCrystal crystal) {
+            CRYSTAL_ATTACKERS.entrySet().removeIf(entry -> tick - entry.getValue().tick() > ACTION_TTL);
             RecentPlayerAction action = CRYSTAL_ATTACKERS.get(crystal.getUUID());
             if (action != null && tick - action.tick() >= 0 && tick - action.tick() <= ACTION_TTL) return new Attribution(action.playerUuid(), action.playerName(), DamageMethod.END_CRYSTAL);
-            if (causing instanceof Player player) return attribution(player, DamageMethod.END_CRYSTAL);
             return null;
         }
 
