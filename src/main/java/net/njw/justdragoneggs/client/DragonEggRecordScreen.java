@@ -54,9 +54,10 @@ public final class DragonEggRecordScreen extends Screen {
             Component rankText = Component.literal(rank + ".");
             Component nameText = Component.literal(entry.name());
             Component damageText = Component.literal(String.format(Locale.ROOT, "%.2f%%", entry.damage()));
-            graphics.text(this.font, rankText, rankRight - this.font.width(rankText), y, color);
-            graphics.text(this.font, nameText, nameLeft, y, color);
-            graphics.text(this.font, damageText, right - this.font.width(damageText), y, color);
+            boolean shadow = rank <= 3;
+            graphics.text(this.font, rankText, rankRight - this.font.width(rankText), y, color, shadow);
+            graphics.text(this.font, nameText, nameLeft, y, color, shadow);
+            graphics.text(this.font, damageText, right - this.font.width(damageText), y, color, shadow);
             y += 13;
         }
 
@@ -82,12 +83,11 @@ public final class DragonEggRecordScreen extends Screen {
     }
 
     private static int playerRankColor(int rank) {
-        return switch (rank) {
-            case 1 -> COLOR_1;
-            case 2 -> COLOR_2;
-            case 3 -> COLOR_3;
-            default -> COLOR_4;
-        };
+        if (rank == 1) return COLOR_1;
+        if (rank == 2) return COLOR_2;
+        if (rank == 3) return COLOR_3;
+        if (rank <= 10) return COLOR_4;
+        return COLOR_5;
     }
 
     private static List<Entry> createEntries() {
