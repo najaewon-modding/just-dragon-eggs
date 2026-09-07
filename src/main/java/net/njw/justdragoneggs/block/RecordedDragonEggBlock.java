@@ -10,6 +10,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +32,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
+import net.njw.justdragoneggs.event.RecordedDragonEggDropEvents;
 import net.njw.justdragoneggs.registry.ModContent;
+import org.jspecify.annotations.Nullable;
 
 public final class RecordedDragonEggBlock extends FallingBlock implements EntityBlock {
     public static final MapCodec<RecordedDragonEggBlock> CODEC = simpleCodec(RecordedDragonEggBlock::new);
@@ -71,6 +74,13 @@ public final class RecordedDragonEggBlock extends FallingBlock implements Entity
     @Override
     protected void attack(BlockState state, Level level, BlockPos pos, Player player) {
         teleport(state, level, pos);
+    }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        DragonBattleRecord record = stack.get(ModContent.BATTLE_RECORD.get());
+        if (record != null && level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg) egg.setRecord(record);
     }
 
     private void teleport(BlockState state, Level level, BlockPos pos) {
@@ -115,6 +125,13 @@ public final class RecordedDragonEggBlock extends FallingBlock implements Entity
     }
 
     @Override
+    public void onBrokenAfterFall(Level level, BlockPos pos, FallingBlockEntity entity) {
+        if (entity.blockData == null) return;
+        DragonBattleRecord record = entity.blockData.read("battle_record", DragonBattleRecord.CODEC).orElse(null);
+        if (record != null) RecordedDragonEggDropEvents.rememberFallingDrop(level, pos, record);
+    }
+
+    @Override
     protected int getDelayAfterPlace() {
         return 5;
     }
@@ -133,14 +150,14 @@ public final class RecordedDragonEggBlock extends FallingBlock implements Entity
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         ItemStack stack = new ItemStack(ModContent.RECORDED_DRAGON_EGG_ITEM.get());
         BlockEntity blockEntity = params.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
-        if (blockEntity instanceof RecordedDragonEggBlockEntity egg && egg.record() != null) stack.applyComponents(egg.collectComponents());
+        if (blockEntity instanceof RecordedDragonEggBlockEntity egg && egg.record() != null) stack.set(ModContent.BATTLE_RECORD.get(), egg.record());
         return List.of(stack);
     }
 
     @Override
     protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         ItemStack stack = new ItemStack(ModContent.RECORDED_DRAGON_EGG_ITEM.get());
-        if (includeData && level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg && egg.record() != null) stack.applyComponents(egg.collectComponents());
+        if (includeData && level.getBlockEntity(pos) instanceof RecordedDragonEggBlockEntity egg && egg.record() != null) stack.set(ModContent.BATTLE_RECORD.get(), egg.record());
         return stack;
     }
 }
