@@ -40,8 +40,8 @@ public final class DragonEggClientEvents {
 
         poseStack.pushPose();
         poseStack.translate(dx, dy, dz);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# 1").withColor(DragonEggRecordScreen.COLOR_1), false, FULL_BRIGHT, distanceToCameraSq, camera);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, Component.literal("JWN__").withColor(DragonEggRecordScreen.COLOR_4), false, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# 1").withColor(DragonEggRecordScreen.COLOR_1), true, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, Component.literal("JWN__").withColor(DragonEggRecordScreen.COLOR_4), true, FULL_BRIGHT, distanceToCameraSq, camera);
         poseStack.popPose();
     }
 
