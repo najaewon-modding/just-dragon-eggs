@@ -30,7 +30,9 @@ public final class DragonEggRecordScreen extends Screen {
     private static final int COLOR_DETAIL = 0xFFFFFFFF;
     private static final int VISIBLE_ROWS = 10;
     private static final int ROW_HEIGHT = 13;
-    private static final int TOP_THREE_GAP = 6;
+    private static final int TOP_THREE_SEPARATOR_HEIGHT = 10;
+    private static final int DETAIL_LIST_GAP = 3;
+    private static final Component TOP_THREE_SEPARATOR = Component.literal("----------------");
     private static long handCursor;
 
     private final DragonBattleRecord record;
@@ -82,7 +84,10 @@ public final class DragonEggRecordScreen extends Screen {
             Component damageText = Component.literal(percent(entry.damage(), record.totalDamage()));
             graphics.text(this.font, damageText, right - this.font.width(damageText), y, color, shadow);
             y += ROW_HEIGHT;
-            if (entry.rank() == 3) y += TOP_THREE_GAP;
+            if (hasTopThreeSeparatorAfter(i)) {
+                graphics.centeredText(this.font, TOP_THREE_SEPARATOR, centerX, y - 2, COLOR_5);
+                y += TOP_THREE_SEPARATOR_HEIGHT;
+            }
         }
     }
 
@@ -96,7 +101,7 @@ public final class DragonEggRecordScreen extends Screen {
         graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.method"), left, y, COLOR_DETAIL);
         Component shareHeader = Component.translatable("screen.njw_just_dragon_eggs.share");
         graphics.text(this.font, shareHeader, right - this.font.width(shareHeader), y, COLOR_DETAIL);
-        y += 14 + TOP_THREE_GAP;
+        y += 14 + DETAIL_LIST_GAP;
 
         int end = Math.min(selected.methods().size(), scrollOffset + VISIBLE_ROWS);
         for (int i = scrollOffset; i < end; i++) {
@@ -136,7 +141,7 @@ public final class DragonEggRecordScreen extends Screen {
                 return true;
             }
             y += ROW_HEIGHT;
-            if (entry.rank() == 3) y += TOP_THREE_GAP;
+            if (hasTopThreeSeparatorAfter(i)) y += TOP_THREE_SEPARATOR_HEIGHT;
         }
         return super.mouseClicked(event, doubleClick);
     }
@@ -174,9 +179,13 @@ public final class DragonEggRecordScreen extends Screen {
             BattleEntry entry = battleEntries.get(i);
             if (mouseY >= y && mouseY < y + ROW_HEIGHT) return mouseX >= nameLeft && mouseX < nameLeft + this.font.width(entry.name());
             y += ROW_HEIGHT;
-            if (entry.rank() == 3) y += TOP_THREE_GAP;
+            if (hasTopThreeSeparatorAfter(i)) y += TOP_THREE_SEPARATOR_HEIGHT;
         }
         return false;
+    }
+
+    private boolean hasTopThreeSeparatorAfter(int index) {
+        return index >= 0 && index + 1 < battleEntries.size() && battleEntries.get(index).rank() == 3 && battleEntries.get(index + 1).rank() == 4;
     }
 
     private void select(BattleEntry entry) {
