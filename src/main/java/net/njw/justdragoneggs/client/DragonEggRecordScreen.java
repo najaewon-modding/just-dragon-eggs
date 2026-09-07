@@ -72,10 +72,12 @@ public final class DragonEggRecordScreen extends Screen {
         int end = Math.min(battleEntries.size(), scrollOffset + VISIBLE_ROWS);
         for (int i = scrollOffset; i < end; i++) {
             BattleEntry entry = battleEntries.get(i);
-            int color = rankingColor(entry.rank());
-            boolean shadow = entry.rank() <= 3;
-            Component rankText = Component.literal(entry.rank() + ".");
-            graphics.text(this.font, rankText, rankRight - this.font.width(rankText), y, color, shadow);
+            int color = entry.rank() > 0 ? rankingColor(entry.rank()) : COLOR_4;
+            boolean shadow = entry.rank() > 0 && entry.rank() <= 3;
+            if (entry.rank() > 0) {
+                Component rankText = Component.literal(entry.rank() + ".");
+                graphics.text(this.font, rankText, rankRight - this.font.width(rankText), y, color, shadow);
+            }
             graphics.text(this.font, entry.name(), nameLeft, y, color, shadow);
             Component damageText = Component.literal(percent(entry.damage(), record.totalDamage()));
             graphics.text(this.font, damageText, right - this.font.width(damageText), y, color, shadow);
@@ -190,17 +192,16 @@ public final class DragonEggRecordScreen extends Screen {
     }
 
     private static List<BattleEntry> createBattleEntries(DragonBattleRecord record) {
-        List<BattleEntry> entries = new ArrayList<>();
-        for (PlayerDamageRecord player : record.playerDamage()) entries.add(new BattleEntry(0, Component.literal(player.playerName()), player.totalDamage(), player));
-        double other = record.totalOtherDamage();
-        if (other > 0.0) entries.add(new BattleEntry(0, Component.translatable("screen.njw_just_dragon_eggs.other"), other, null));
-        entries.sort(Comparator.comparingDouble(BattleEntry::damage).reversed());
-        List<BattleEntry> ranked = new ArrayList<>(entries.size());
-        for (int i = 0; i < entries.size(); i++) {
-            BattleEntry entry = entries.get(i);
-            ranked.add(new BattleEntry(i + 1, entry.name(), entry.damage(), entry.player()));
+        List<PlayerDamageRecord> players = new ArrayList<>(record.playerDamage());
+        players.sort(Comparator.comparingDouble(PlayerDamageRecord::totalDamage).reversed());
+        List<BattleEntry> result = new ArrayList<>();
+        for (int i = 0; i < players.size(); i++) {
+            PlayerDamageRecord player = players.get(i);
+            result.add(new BattleEntry(i + 1, Component.literal(player.playerName()), player.totalDamage(), player));
         }
-        return List.copyOf(ranked);
+        double other = record.totalOtherDamage();
+        if (other > 0.0) result.add(new BattleEntry(0, Component.translatable("screen.njw_just_dragon_eggs.other"), other, null));
+        return List.copyOf(result);
     }
 
     private static Component playerMethodName(PlayerDamageRecord.Entry entry) {
