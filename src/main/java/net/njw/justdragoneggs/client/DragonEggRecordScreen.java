@@ -26,10 +26,11 @@ public final class DragonEggRecordScreen extends Screen {
     public static final int COLOR_2 = 0xFFF2F5F8;
     public static final int COLOR_3 = 0xFFD8894A;
     public static final int COLOR_4 = 0xFFD0D0D0;
-    public static final int COLOR_5 = 0xFFBCBCBC;
+    public static final int COLOR_5 = 0xFF9F9F9F;
     private static final int COLOR_DETAIL = 0xFFFFFFFF;
     private static final int VISIBLE_ROWS = 10;
     private static final int ROW_HEIGHT = 13;
+    private static final int TOP_THREE_GAP = 4;
     private static long handCursor;
 
     private final DragonBattleRecord record;
@@ -48,10 +49,10 @@ public final class DragonEggRecordScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
         int centerX = this.width / 2;
         int top = top();
-        MutableComponent title = Component.literal("#" + record.dragonNumber() + " ").withColor(dragonNumberColor(record.dragonNumber())).append(Component.translatable("entity.minecraft.ender_dragon").withColor(COLOR_4));
-        graphics.centeredText(this.font, title, centerX, top, COLOR_4);
+        MutableComponent title = Component.literal("#" + record.dragonNumber() + " ").withColor(dragonNumberColor(record.dragonNumber())).append(Component.translatable("entity.minecraft.ender_dragon").withColor(COLOR_DETAIL));
+        graphics.centeredText(this.font, title, centerX, top, COLOR_DETAIL);
         Component killer = record.killerName().<Component>map(Component::literal).orElseGet(() -> Component.translatable("screen.njw_just_dragon_eggs.unknown"));
-        graphics.centeredText(this.font, Component.translatable("screen.njw_just_dragon_eggs.slain_by", killer), centerX, top + 16, 0xFFAAAAAA);
+        graphics.centeredText(this.font, Component.translatable("screen.njw_just_dragon_eggs.slain_by", killer), centerX, top + 16, COLOR_DETAIL);
         if (selected == null) renderRanking(graphics, centerX, top);
         else renderDetails(graphics, centerX, top);
         setHandCursor(isInteractive(mouseX, mouseY));
@@ -63,9 +64,9 @@ public final class DragonEggRecordScreen extends Screen {
         int nameLeft = left + 32;
         int right = centerX + 100;
         int y = top + 42;
-        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.player"), nameLeft, y, 0xFFAAAAAA);
+        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.player"), nameLeft, y, COLOR_5);
         Component damageHeader = Component.translatable("screen.njw_just_dragon_eggs.damage");
-        graphics.text(this.font, damageHeader, right - this.font.width(damageHeader), y, 0xFFAAAAAA);
+        graphics.text(this.font, damageHeader, right - this.font.width(damageHeader), y, COLOR_5);
         y += 14;
 
         int end = Math.min(battleEntries.size(), scrollOffset + VISIBLE_ROWS);
@@ -79,6 +80,7 @@ public final class DragonEggRecordScreen extends Screen {
             Component damageText = Component.literal(percent(entry.damage(), record.totalDamage()));
             graphics.text(this.font, damageText, right - this.font.width(damageText), y, color, shadow);
             y += ROW_HEIGHT;
+            if (entry.rank() == 3) y += TOP_THREE_GAP;
         }
     }
 
@@ -86,12 +88,12 @@ public final class DragonEggRecordScreen extends Screen {
         int left = centerX - 100;
         int right = centerX + 100;
         int y = top + 42;
-        graphics.text(this.font, backText(), left, y, 0xFFAAAAAA);
+        graphics.text(this.font, backText(), left, y, COLOR_5);
         graphics.centeredText(this.font, selected.title(), centerX, y, COLOR_4);
         y += 18;
-        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.method"), left, y, 0xFFAAAAAA);
+        graphics.text(this.font, Component.translatable("screen.njw_just_dragon_eggs.method"), left, y, COLOR_5);
         Component shareHeader = Component.translatable("screen.njw_just_dragon_eggs.share");
-        graphics.text(this.font, shareHeader, right - this.font.width(shareHeader), y, 0xFFAAAAAA);
+        graphics.text(this.font, shareHeader, right - this.font.width(shareHeader), y, COLOR_5);
         y += 14;
 
         int end = Math.min(selected.methods().size(), scrollOffset + VISIBLE_ROWS);
@@ -123,14 +125,18 @@ public final class DragonEggRecordScreen extends Screen {
         }
 
         int nameLeft = left + 32;
-        int firstRowY = top + 56;
-        if (mouseY < firstRowY || mouseY >= firstRowY + VISIBLE_ROWS * ROW_HEIGHT) return super.mouseClicked(event, doubleClick);
-        int index = scrollOffset + (int)((mouseY - firstRowY) / ROW_HEIGHT);
-        if (index < 0 || index >= battleEntries.size()) return super.mouseClicked(event, doubleClick);
-        BattleEntry entry = battleEntries.get(index);
-        if (mouseX < nameLeft || mouseX >= nameLeft + this.font.width(entry.name())) return super.mouseClicked(event, doubleClick);
-        select(entry);
-        return true;
+        int y = top + 56;
+        int end = Math.min(battleEntries.size(), scrollOffset + VISIBLE_ROWS);
+        for (int i = scrollOffset; i < end; i++) {
+            BattleEntry entry = battleEntries.get(i);
+            if (mouseY >= y && mouseY < y + ROW_HEIGHT && mouseX >= nameLeft && mouseX < nameLeft + this.font.width(entry.name())) {
+                select(entry);
+                return true;
+            }
+            y += ROW_HEIGHT;
+            if (entry.rank() == 3) y += TOP_THREE_GAP;
+        }
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
@@ -160,12 +166,15 @@ public final class DragonEggRecordScreen extends Screen {
         }
 
         int nameLeft = left + 32;
-        int firstRowY = top + 56;
-        if (mouseY < firstRowY || mouseY >= firstRowY + VISIBLE_ROWS * ROW_HEIGHT) return false;
-        int index = scrollOffset + (int)((mouseY - firstRowY) / ROW_HEIGHT);
-        if (index < 0 || index >= battleEntries.size()) return false;
-        BattleEntry entry = battleEntries.get(index);
-        return mouseX >= nameLeft && mouseX < nameLeft + this.font.width(entry.name());
+        int y = top + 56;
+        int end = Math.min(battleEntries.size(), scrollOffset + VISIBLE_ROWS);
+        for (int i = scrollOffset; i < end; i++) {
+            BattleEntry entry = battleEntries.get(i);
+            if (mouseY >= y && mouseY < y + ROW_HEIGHT) return mouseX >= nameLeft && mouseX < nameLeft + this.font.width(entry.name());
+            y += ROW_HEIGHT;
+            if (entry.rank() == 3) y += TOP_THREE_GAP;
+        }
+        return false;
     }
 
     private void select(BattleEntry entry) {

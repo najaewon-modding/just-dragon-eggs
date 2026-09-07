@@ -17,7 +17,7 @@ public final class RecordedDragonEggItem extends BlockItem {
     private static final int COLOR_2 = 0xFFF2F5F8;
     private static final int COLOR_3 = 0xFFD8894A;
     private static final int COLOR_4 = 0xFFD0D0D0;
-    private static final int COLOR_5 = 0xFFBCBCBC;
+    private static final int COLOR_5 = 0xFF9F9F9F;
     private static final int COLOR_NAME = 0xFFFFFFFF;
 
     public RecordedDragonEggItem(Block block, Item.Properties properties) {
