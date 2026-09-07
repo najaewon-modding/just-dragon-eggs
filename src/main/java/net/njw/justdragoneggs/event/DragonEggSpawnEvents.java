@@ -1,7 +1,7 @@
 package net.njw.justdragoneggs.event;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -14,6 +14,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.njw.justdragoneggs.JustDragonEggs;
 import net.njw.justdragoneggs.block.entity.RecordedDragonEggBlockEntity;
 import net.njw.justdragoneggs.dragon.DragonBattleRecord;
@@ -22,7 +23,7 @@ import net.njw.justdragoneggs.state.DragonWorldData;
 
 @EventBusSubscriber(modid = JustDragonEggs.MODID)
 public final class DragonEggSpawnEvents {
-    private static final Map<UUID, Boolean> VANILLA_EGG_EXPECTED = new HashMap<>();
+    private static final Set<UUID> VANILLA_EGG_EXPECTED = new HashSet<>();
 
     private DragonEggSpawnEvents() {}
 
@@ -30,7 +31,8 @@ public final class DragonEggSpawnEvents {
     public static void onDragonDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof EnderDragon dragon) || !(dragon.level() instanceof ServerLevel level)) return;
         EnderDragonFight fight = level.getDragonFight();
-        VANILLA_EGG_EXPECTED.put(dragon.getUUID(), fight != null && !fight.hasPreviouslyKilledDragon());
+        if (fight != null && !fight.hasPreviouslyKilledDragon()) VANILLA_EGG_EXPECTED.add(dragon.getUUID());
+        else VANILLA_EGG_EXPECTED.remove(dragon.getUUID());
     }
 
     @SubscribeEvent
@@ -42,7 +44,7 @@ public final class DragonEggSpawnEvents {
             return;
         }
 
-        boolean vanillaEggExpected = VANILLA_EGG_EXPECTED.remove(dragon.getUUID()) == Boolean.TRUE;
+        boolean vanillaEggExpected = VANILLA_EGG_EXPECTED.remove(dragon.getUUID());
         BlockPos top = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(dragon.getFightOrigin()));
         BlockPos eggPos = top;
         if (vanillaEggExpected) {
@@ -60,5 +62,10 @@ public final class DragonEggSpawnEvents {
         } else {
             JustDragonEggs.LOGGER.warn("Recorded dragon egg for battle #{} has no block entity at {}", record.dragonNumber(), eggPos);
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        VANILLA_EGG_EXPECTED.clear();
     }
 }
