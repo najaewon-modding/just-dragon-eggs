@@ -2,7 +2,6 @@ package net.njw.justdragoneggs.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
@@ -20,6 +19,8 @@ import net.njw.justdragoneggs.JustDragonEggs;
 
 @EventBusSubscriber(modid = JustDragonEggs.MODID, value = Dist.CLIENT)
 public final class DragonEggClientEvents {
+    private static final int FULL_BRIGHT = 0xF000F0;
+
     private DragonEggClientEvents() {}
 
     @SubscribeEvent
@@ -35,13 +36,12 @@ public final class DragonEggClientEvents {
         double dx = pos.getX() + 0.5 - camera.pos.x;
         double dy = pos.getY() + 0.5 - camera.pos.y;
         double dz = pos.getZ() + 0.5 - camera.pos.z;
-        int light = LevelRenderer.getLightCoords(minecraft.level, pos.above());
         double distanceToCameraSq = camera.pos.distanceToSqr(pos.getCenter());
 
         poseStack.pushPose();
         poseStack.translate(dx, dy, dz);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# 1").withColor(DragonEggRecordScreen.COLOR_1), false, light, distanceToCameraSq, camera);
-        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, Component.literal("JWN__").withColor(DragonEggRecordScreen.COLOR_4), false, light, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.94, 0), 0, Component.literal("# 1").withColor(DragonEggRecordScreen.COLOR_1), false, FULL_BRIGHT, distanceToCameraSq, camera);
+        collector.order(1).submitNameTag(poseStack, new Vec3(0, 0.68, 0), 0, Component.literal("JWN__").withColor(DragonEggRecordScreen.COLOR_4), false, FULL_BRIGHT, distanceToCameraSq, camera);
         poseStack.popPose();
     }
 
