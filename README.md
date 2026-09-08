@@ -1,61 +1,107 @@
 # Just Dragon Eggs
 
-**Just Dragon Eggs** is a lightweight NeoForge mod that turns every Ender Dragon egg into a unique trophy containing the battle record.
+엔더 드래곤을 처치할 때마다 해당 전투 기록을 담은 **고유한 드래곤 알**을 남기는 NeoForge 모드입니다.
 
-## Compatibility
+각 알에는 몇 번째 드래곤인지, 누가 마지막 일격을 가했는지, 플레이어별 피해 비율과 피해 방식이 저장되어 전투 기념품처럼 확인할 수 있습니다.
 
-- Minecraft: `26.1.2`
-- NeoForge: `26.1.2.97` or newer for Minecraft 26.1.2
-- Mod version: `1.0.0-mc26.1.2`
+## 지원 환경
 
-For multiplayer, install the mod on both the server and connecting clients.
+| 항목 | 값 |
+| --- | --- |
+| Minecraft | `26.1.2` |
+| NeoForge | `26.1.2.97+` |
+| 멀티플레이 | 서버와 클라이언트 모두 설치 |
 
-## Features
+## 주요 기능
 
-### A recorded egg for every Ender Dragon
+- 엔더 드래곤을 처치할 때마다 기록된 드래곤 알 생성
+- 첫 번째 드래곤뿐 아니라 이후에 부활시킨 드래곤도 각각 별도의 알 생성
+- 알마다 드래곤 번호와 최종 처치자 기록
+- 아이템 상태와 설치된 블록 상태에서 전투 기록 유지
+- 플레이어별 피해량 순위와 전체 전투 피해 비율 표시
+- 플레이어별 피해 방식 상세 확인
+- 플레이어에게 확실하게 귀속할 수 없는 피해는 `기타`로 별도 기록
+- 기존 드래곤 알처럼 순간이동하는 상호작용 유지
 
-Every Ender Dragon kill produces a recorded Dragon Egg. The first vanilla Dragon Egg is replaced with the recorded version, and later kills create additional recorded eggs.
+## 드래곤 알 생성
 
-Each egg stores the record of its own battle, and the record is preserved when the egg becomes an item and is placed again.
+엔더 드래곤을 처치하면 해당 전투 기록을 가진 드래곤 알이 생성됩니다.
 
-### Egg information
+- 첫 번째 드래곤 처치 시 기존 드래곤 알이 기록된 알로 대체됩니다.
+- 두 번째 이후 드래곤 처치에서도 새로운 기록된 알이 추가로 생성됩니다.
+- 각 알은 자신이 생성된 전투의 기록을 독립적으로 보관합니다.
 
-When a recorded egg is an item, its tooltip shows the Dragon number and killer, for example:
+알을 아이템으로 회수했다가 다시 설치해도 기록은 유지됩니다.
+
+## 알 정보
+
+아이템 상태의 드래곤 알에는 몇 번째 드래곤인지와 최종 처치자가 표시됩니다.
+
+예:
 
 ```text
 #1 PlayerName
 ```
 
-When aiming at a placed recorded egg, the Dragon number and killer are displayed above the egg.
+설치된 알을 바라볼 때도 알 위에 드래곤 번호와 최종 처치자가 표시됩니다.
 
-### Vanilla-style interaction
+## 상호작용
 
-- Left click: teleport the Dragon Egg.
-- Right click: teleport the Dragon Egg.
-- Shift + right click: keep the egg in place and open its Battle Record screen.
+기존 드래곤 알의 순간이동 특성을 유지합니다.
 
-### Battle Record screen
+- 좌클릭: 드래곤 알 순간이동
+- 우클릭: 드래곤 알 순간이동
+- Shift + 우클릭: 알을 이동시키지 않고 전투 기록 화면 열기
 
-The Battle Record screen shows:
+## 전투 기록 화면
 
-- players ranked by damage dealt to the Ender Dragon;
-- each player's share of total battle damage;
-- unowned or unattributed damage as `Other`, outside the player ranking;
-- the player who dealt the final blow;
-- per-player damage breakdowns by weapon or damage method.
+전투 기록 화면에서는 해당 드래곤 전투의 기여도를 확인할 수 있습니다.
 
-Click a player name, or `Other`, to open the detailed damage breakdown.
+### 피해 순위
 
-## Damage attribution
+플레이어를 엔더 드래곤에게 준 총 피해량 순으로 표시합니다.
 
-The mod records the Ender Dragon's actual health loss after Minecraft has applied damage handling. Player attribution is intentionally conservative: damage is assigned to a player only when Minecraft provides a reliable causal connection. Damage that cannot be attributed reliably is recorded as `Other` instead of being guessed from proximity or redstone activity.
+각 플레이어 옆에는 해당 전투에서 발생한 전체 피해 중 자신이 차지한 비율이 표시됩니다.
 
-## Installation
+플레이어에게 확실하게 귀속할 수 없는 피해는 순위에서 제외되고 `기타` 항목으로 별도 표시됩니다.
 
-1. Install NeoForge for Minecraft 26.1.2.
-2. Put the Just Dragon Eggs JAR in the `mods` folder.
-3. Launch Minecraft with the matching NeoForge profile.
+### 피해 방식 상세 보기
 
-## License
+플레이어 이름을 클릭하면 해당 플레이어가 어떤 방식으로 피해를 입혔는지 비율을 확인할 수 있습니다.
 
-Just Dragon Eggs is licensed under the [MIT License](LICENSE).
+기록 가능한 대표적인 방식:
+
+- 직접 공격
+- 검, 도끼 등 사용한 아이템
+- 활 및 쇠뇌를 포함한 투사체
+- 삼지창
+- 폭죽
+- 침대 폭발
+- 리스폰 정박기 폭발
+- 엔드 수정 폭발
+- TNT
+- 가시 효과
+
+`기타` 항목을 클릭하면 플레이어에게 귀속되지 않은 피해도 원인별로 확인할 수 있습니다.
+
+### 최종 처치자
+
+전투 기록 상단에는 엔더 드래곤에게 마지막 일격을 가한 플레이어가 표시됩니다. 확실한 플레이어 처치자를 확인할 수 없는 경우에는 알 수 없음으로 표시됩니다.
+
+## 피해 기록 기준
+
+Just Dragon Eggs는 플레이어가 실제로 엔더 드래곤에게 준 피해를 가능한 범위에서 기록합니다.
+
+폭발처럼 원인을 추적하기 어려운 피해를 단순히 주변 플레이어에게 추정해서 배정하지 않습니다. 특정 플레이어가 원인이라고 확실하게 확인할 수 없는 피해는 `기타`로 기록합니다.
+
+이 때문에 전투 기록의 플레이어별 수치는 추정치보다는 확인 가능한 피해를 우선합니다.
+
+## 설치
+
+1. Minecraft `26.1.2`와 호환되는 NeoForge를 설치합니다.
+2. Just Dragon Eggs JAR 파일을 서버와 클라이언트의 `mods` 폴더에 넣습니다.
+3. Minecraft 또는 서버를 실행합니다.
+
+## 라이선스
+
+MIT License. 자세한 내용은 [LICENSE](LICENSE)를 확인하세요.
